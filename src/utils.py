@@ -1,11 +1,12 @@
 import logging
 from urllib.parse import urljoin
-from tqdm import tqdm
+
 from bs4 import BeautifulSoup
 from requests import RequestException
+from tqdm import tqdm
 
-from exceptions import ParserFindTagException
 from constants import EXPECTED_STATUS, PEPS_URL
+from exceptions import ParserFindTagException
 
 
 def get_response(session, url):
@@ -50,33 +51,42 @@ def counter(status, dict):
     return dict
 
 
-
-# def search_peps_in trs():
-
-
-
-def search_trs_info_in_section(section,session):
-    tables = find_tags(section, 'table')
+def search_tables_info_in_section(section, session):
+    """Поиск в информации нужной секции."""
+    sections = find_tags(section, 'section')
     counted_results = {}
-    for table in tables:
-        trs = find_tags(table.tbody, 'tr')
-        for tr in tqdm(trs):
-            tds = find_tags(tr, 'td')
-            status_on_main_page = tds[0].text
-            if not status_on_main_page == '':
-                status_on_main_page = status_on_main_page[1:]
-            link = tds[2].a['href']
-            pep_link = urljoin(PEPS_URL, link)
-            response = get_response(session, pep_link)
-            if response is None:
-                return
-            pep_soup = BeautifulSoup(response.text, features='lxml')
-            status_field = find_tag(pep_soup, string='Status')
-            status_value = status_field.parent.next_sibling.next_sibling.text
-            counted_results = counter(status_value, counted_results)
-            if status_value not in EXPECTED_STATUS[status_on_main_page]:
-                logging.info(
-                    f'Несовпадающие статусы: \n{pep_link} \n'
-                    f'Статус в карточке:{status_value} \n'
-                    f'Ожидаемые статусы:{EXPECTED_STATUS[status_on_main_page]}')
+    for sub_section in sections:
+        table_header = find_tag(sub_section, 'h3').text
+        tables = find_tags(sub_section, 'table')
+        for table in tables:
+            trs = find_tags(table.tbody, 'tr')
+            for tr in tqdm(trs, desc=table_header[:25]):
+                tds = find_tags(tr, 'td')
+                status_on_main_page = tds[0].text
+                if not status_on_main_page == '':
+                    status_on_main_page = status_on_main_page[1:]
+                link = tds[2].a['href']
+                pep_link = urljoin(PEPS_URL, link)
+                response = get_response(session, pep_link)
+                if response is None:
+                    return
+                pep_soup = BeautifulSoup(response.text, features='lxml')
+                status_field = find_tag(pep_soup, string='Status')
+                status_value = status_field.parent.next_sibling.next_sibling.text
+                counted_results = counter(status_value, counted_results)
+                if status_value not in EXPECTED_STATUS[status_on_main_page]:
+                    logging.info(
+                        f'Несовпадающие статусы: \n{pep_link} \n'
+                        f'Статус в карточке:{status_value} \n'
+                        f'Ожидаемые статусы:{EXPECTED_STATUS[status_on_main_page]}')
     return counted_results
+
+
+def summ(dict1, dict2):
+    """Сложение словарей."""
+    for key in dict2.keys():
+        try:
+            dict1[key] = dict1[key] + dict2[key]
+        except KeyError:
+            dict1[key] = dict2[key]
+    return dict1

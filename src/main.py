@@ -9,12 +9,14 @@ from tqdm import tqdm
 from configs import configure_argument_parser, configure_logging
 from constants import BASE_DIR, MAIN_DOC_URL, PEPS_URL
 from outputs import control_output
-from utils import get_response, find_tag, find_tags, search_peps_info_in_section
+from utils import (get_response, find_tag, find_tags,
+                   search_tables_info_in_section, summ)
 
 
-def whats_new():
+def whats_new(session=None):
     whats_new_url = urljoin(MAIN_DOC_URL, 'whatsnew/')
-    session = requests_cache.CachedSession()
+    if session is None:
+        session = requests_cache.CachedSession()
     response = get_response(session, whats_new_url)
     if response is None:
         return
@@ -23,7 +25,7 @@ def whats_new():
     div_with_ul = find_tag(main_div, 'div', attrs={'class': 'toctree-wrapper'})
     sections_by_python = div_with_ul.find_all('li',
                                               attrs={'class': 'toctree-l1'})
-    results = [('Ссылка на статью', 'Заголовок', 'Редактор, автор')]
+    results = [('Ссылка на статью', 'Заголовок', 'Редактор, Автор')]
     for section in tqdm(sections_by_python, desc='Парсинг релизов'):
         version_a_tag = section.find('a')
         href = version_a_tag['href']
@@ -70,11 +72,12 @@ def latest_versions():
     return results
 
 
-def download():
+def download(session=None):
     downloads_url = urljoin(MAIN_DOC_URL, 'download.html')
     downloads_dir = BASE_DIR / 'downloads'
     downloads_dir.mkdir(exist_ok=True)
-    session = requests_cache.CachedSession()
+    if session == None:
+        session = requests_cache.CachedSession()
     response = get_response(session, downloads_url)
     if response is None:
         return
@@ -100,11 +103,12 @@ def pep():
     if response is None:
         return
     soup = BeautifulSoup(response.text, features='lxml')
+    results = [('Статус', 'Количество')]
+    result = {}
     section = find_tag(soup, 'section', attrs={'id': 'index-by-category'})
-    counted_results=search_peps_info_in_section(section, session)
-    header = [('Статус', 'Количество')]
-    new = header + list(counted_results.items())
-    return new
+    result = summ(result, search_tables_info_in_section(section, session))
+    results += list(result.items())
+    return results
 
 
 MODE_TO_FUNCTION = {
