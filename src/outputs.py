@@ -3,8 +3,8 @@ import datetime as dt
 import logging
 
 from prettytable import PrettyTable
-from requests_cache.models.response import DATETIME_FORMAT
 
+from configs import DT_FORMAT
 from constants import BASE_DIR
 
 
@@ -29,10 +29,8 @@ def pretty_output(results):
     """Вывод данных в формате PrettyTable."""
     table = PrettyTable()
     table.field_names = results[0]
-    print('header',results[0])
     table.align = 'l'
     table.add_rows(results[1:])
-    print('others', results[1:])
     print(table)
 
 
@@ -42,12 +40,9 @@ def file_output(results, cli_args):
     results_dir.mkdir(exist_ok=True)
     parser_mode = cli_args.mode
     now = dt.datetime.now()
-    now_formatted = now.strftime(DATETIME_FORMAT)
-    now_formatted = now_formatted.replace(' ', '_')[:-4]
+    now_formatted = now.strftime(DT_FORMAT)
     file_name = f'{parser_mode}_{now_formatted}.csv'
     file_path = results_dir / file_name
-    file_path=results_dir/'111.csv'
-    print(file_path)
     with open(file_path, 'w', encoding='utf-8') as f:
         writer = csv.writer(f, dialect='unix')
         writer.writerows(results)

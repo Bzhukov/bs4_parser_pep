@@ -1,5 +1,6 @@
 import logging
 
+import requests_cache
 from requests import RequestException
 
 from exceptions import ParserFindTagException
