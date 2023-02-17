@@ -1,9 +1,11 @@
 import logging
-
-import requests_cache
+from urllib.parse import urljoin
+from tqdm import tqdm
+from bs4 import BeautifulSoup
 from requests import RequestException
 
 from exceptions import ParserFindTagException
+from constants import EXPECTED_STATUS, PEPS_URL
 
 
 def get_response(session, url):
@@ -46,3 +48,35 @@ def counter(status, dict):
     except KeyError:
         dict[status] = 1
     return dict
+
+
+
+# def search_peps_in trs():
+
+
+
+def search_trs_info_in_section(section,session):
+    tables = find_tags(section, 'table')
+    counted_results = {}
+    for table in tables:
+        trs = find_tags(table.tbody, 'tr')
+        for tr in tqdm(trs):
+            tds = find_tags(tr, 'td')
+            status_on_main_page = tds[0].text
+            if not status_on_main_page == '':
+                status_on_main_page = status_on_main_page[1:]
+            link = tds[2].a['href']
+            pep_link = urljoin(PEPS_URL, link)
+            response = get_response(session, pep_link)
+            if response is None:
+                return
+            pep_soup = BeautifulSoup(response.text, features='lxml')
+            status_field = find_tag(pep_soup, string='Status')
+            status_value = status_field.parent.next_sibling.next_sibling.text
+            counted_results = counter(status_value, counted_results)
+            if status_value not in EXPECTED_STATUS[status_on_main_page]:
+                logging.info(
+                    f'Несовпадающие статусы: \n{pep_link} \n'
+                    f'Статус в карточке:{status_value} \n'
+                    f'Ожидаемые статусы:{EXPECTED_STATUS[status_on_main_page]}')
+    return counted_results

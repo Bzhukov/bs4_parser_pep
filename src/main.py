@@ -7,9 +7,9 @@ from bs4 import BeautifulSoup
 from tqdm import tqdm
 
 from configs import configure_argument_parser, configure_logging
-from constants import BASE_DIR, MAIN_DOC_URL, PEPS_URL, EXPECTED_STATUS
+from constants import BASE_DIR, MAIN_DOC_URL, PEPS_URL
 from outputs import control_output
-from utils import get_response, find_tag, find_tags, counter
+from utils import get_response, find_tag, find_tags, search_peps_info_in_section
 
 
 def whats_new():
@@ -101,29 +101,7 @@ def pep():
         return
     soup = BeautifulSoup(response.text, features='lxml')
     section = find_tag(soup, 'section', attrs={'id': 'index-by-category'})
-    tables = find_tags(section, 'table')
-    counted_results = {}
-    for table in tables:
-        trs = find_tags(table.tbody, 'tr')
-        for tr in tqdm(trs):
-            tds = find_tags(tr, 'td')
-            status_on_main_page = tds[0].text
-            if not status_on_main_page == '':
-                status_on_main_page = status_on_main_page[1:]
-            link = tds[2].a['href']
-            pep_link = urljoin(PEPS_URL, link)
-            response = get_response(session, pep_link)
-            if response is None:
-                return
-            pep_soup = BeautifulSoup(response.text, features='lxml')
-            status_field = find_tag(pep_soup, string='Status')
-            status_value = status_field.parent.next_sibling.next_sibling.text
-            counted_results = counter(status_value, counted_results)
-            if status_value not in EXPECTED_STATUS[status_on_main_page]:
-                logging.info(
-                    f'Несовпадающие статусы: \n{pep_link} \n'
-                    f'Статус в карточке:{status_value} \n'
-                    f'Ожидаемые статусы:{EXPECTED_STATUS[status_on_main_page]}')
+    counted_results=search_peps_info_in_section(section, session)
     header = [('Статус', 'Количество')]
     new = header + list(counted_results.items())
     return new
