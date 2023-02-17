@@ -76,7 +76,7 @@ def download(session=None):
     downloads_url = urljoin(MAIN_DOC_URL, 'download.html')
     downloads_dir = BASE_DIR / 'downloads'
     downloads_dir.mkdir(exist_ok=True)
-    if session == None:
+    if session is None:
         session = requests_cache.CachedSession()
     response = get_response(session, downloads_url)
     if response is None:

@@ -71,14 +71,15 @@ def search_tables_info_in_section(section, session):
                 if response is None:
                     return
                 pep_soup = BeautifulSoup(response.text, features='lxml')
-                status_field = find_tag(pep_soup, string='Status')
-                status_value = status_field.parent.next_sibling.next_sibling.text
+                status_tag = find_tag(pep_soup, string='Status')
+                status_value = status_tag.parent.next_sibling.next_sibling.text
                 counted_results = counter(status_value, counted_results)
                 if status_value not in EXPECTED_STATUS[status_on_main_page]:
                     logging.info(
                         f'Несовпадающие статусы: \n{pep_link} \n'
                         f'Статус в карточке:{status_value} \n'
-                        f'Ожидаемые статусы:{EXPECTED_STATUS[status_on_main_page]}')
+                        f'Ожидаемые статусы:'
+                        f'{EXPECTED_STATUS[status_on_main_page]}')
     return counted_results
 
 
