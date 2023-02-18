@@ -24,7 +24,7 @@ def get_response(session, url):
 
 def find_tag(soup, tag=None, attrs=None, string=None, many=False):
     """Перехват ошибки поиска тегов."""
-    if many == False:
+    if many is False:
         searched_tag = soup.find(tag, attrs=(attrs or {}),
                                  string=(string or ''))
     else:
@@ -74,4 +74,6 @@ def search_tables_info_in_section(section, session):
                         f'\n{pep_link} \n'
                         f'Статус в карточке:{status_value} \n'
                     )
+    total = sum(counted_results.values())
+    counted_results['Total'] = total
     return counted_results
