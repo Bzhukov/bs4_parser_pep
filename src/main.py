@@ -9,8 +9,7 @@ from tqdm import tqdm
 from configs import configure_argument_parser, configure_logging
 from constants import BASE_DIR, MAIN_DOC_URL, PEPS_URL
 from outputs import control_output
-from utils import (get_response, find_tag, find_tags,
-                   search_tables_info_in_section, summ)
+from utils import (get_response, find_tag, search_tables_info_in_section)
 
 
 def whats_new(session=None):
@@ -83,8 +82,8 @@ def download(session=None):
         return
     soup = BeautifulSoup(response.text, features='lxml')
     main_table = find_tag(soup, 'table', attrs={'class': 'docutils'})
-    pdf_a4_tag = find_tags(main_table, 'a',
-                           {'href': re.compile(r'.+pdf-a4\.zip$')})
+    pdf_a4_tag = find_tag(main_table, 'a',
+                          {'href': re.compile(r'.+pdf-a4\.zip$')}, many=True)
     for link in tqdm(pdf_a4_tag, desc='Идет скачивание'):
         pdf_a4_link = link['href']
         archive_url = urljoin(downloads_url, pdf_a4_link)
@@ -104,9 +103,8 @@ def pep():
         return
     soup = BeautifulSoup(response.text, features='lxml')
     results = [('Статус', 'Количество')]
-    result = {}
     section = find_tag(soup, 'section', attrs={'id': 'index-by-category'})
-    result = summ(result, search_tables_info_in_section(section, session))
+    result = search_tables_info_in_section(section, session)
     results += list(result.items())
     return results
 
